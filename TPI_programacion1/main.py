@@ -1,12 +1,15 @@
 import logica
 
 # --- CONFIGURACIÓN ---
-RUTA_CSV = "paises.csv"
+RUTA_CSV = "data.csv"
 
 
 # --- FUNCIONES DE MENÚ ---
 
 def mostrar_menu_principal():
+    """
+    Imprime en consola las opciones del sistema de gestión principal.
+    """
     print("\n========== GESTIÓN DE PAÍSES ==========")
     print("1. Agregar un país")
     print("2. Modificar población y superficie de un país")
@@ -19,13 +22,21 @@ def mostrar_menu_principal():
 
 
 def mostrar_menu_filtros():
+    """
+    CORRECCIÓN / REQUERIMIENTO: Se añade la opción 3 para cumplir 
+    con el filtrado por rango de superficie exigido en la consigna.
+    """
     print("\n--- FILTRAR POR ---")
     print("1. Continente")
     print("2. Rango de población")
-    print("3. Volver")
+    print("3. Rango de superficie (km²)") # Opción sumada
+    print("4. Volver")                     # Desplazado a opción 4
 
 
 def mostrar_menu_orden():
+    """
+    Imprime las propiedades disponibles por las cuales ordenar el dataset.
+    """
     print("\n--- ORDENAR POR ---")
     print("1. Nombre")
     print("2. Población")
@@ -36,21 +47,29 @@ def mostrar_menu_orden():
 # --- FUNCIONES DE PRESENTACIÓN ---
 
 def mostrar_lista(paises):
-    # Muestra una lista de países formateada para el usuario
+    """
+    Muestra una lista de países formateada en columnas tabuladas de forma estética.
+    """
     if not paises:
         print("No hay países para mostrar.")
-        return
+        return # Si no hay datos en la lista, cortamos la ejecución de la función temprano
+        
+    # Imprimimos la cabecera usando alineaciones: '<' izquierda, '>' derecha con anchos fijos
     print(f"\n{'NOMBRE':<20} {'POBLACIÓN':>15} {'SUPERFICIE (km²)':>17} {'CONTINENTE':<15}")
-    print("-" * 70)
+    print("-" * 70) # Línea divisoria estricta de 70 caracteres para prolijidad visual
     for p in paises:
+        # Iteramos cada país aplicando .capitalize() para homogeneizar la visualización final en consola
         print(f"{p['nombre'].capitalize():<20} {p['poblacion']:>15} {p['superficie']:>17} {p['continente'].capitalize():<15}")
 
 
 # --- FUNCIONES DE INTERACCIÓN ---
 
 def pedir_pais():
-    # Pide al usuario los datos de un nuevo país y devuelve el diccionario
+    """
+    Solicita por teclado las propiedades de un país y retorna un diccionario intermedio.
+    """
     print("\n--- AGREGAR PAÍS ---")
+    # Capturamos los datos quitando espacios en blanco accidentales en los extremos con .strip()
     nombre     = input("Nombre del país: ").strip()
     poblacion  = input("Población: ").strip()
     superficie = input("Superficie (km²): ").strip()
@@ -64,28 +83,41 @@ def pedir_pais():
 
 
 def opcion_agregar(paises):
-    nuevo = pedir_pais()
-    exito, mensaje = logica.agregar_pais(nuevo, paises)
-    print(mensaje)
+    """
+    Se comunica con la capa de lógica para validar e intentar dar de alta un país en memoria.
+    """
+    nuevo = pedir_pais() # Invocamos la función interactiva para obtener los datos crudos del usuario
+    exito, mensaje = logica.agregar_pais(nuevo, paises) # Desempaquetamos la tupla de retorno (bool, str)
+    print(mensaje) # Mostramos el mensaje claro de éxito o la razón exacta del rechazo de la validación
 
 
 def opcion_modificar(paises):
+    """
+    Solicita las claves necesarias para alterar la población y superficie de un registro existente.
+    """
     print("\n--- MODIFICAR PAÍS ---")
     cual      = input("Nombre del país a modificar: ").strip()
     nuevapob  = input("Nueva población: ").strip()
     nuevasup  = input("Nueva superficie (km²): ").strip()
+    # Enviamos los datos crudos a la lógica; esta se encargará de validar tipos y positividad
     exito, mensaje = logica.modificar_pais(cual, paises, nuevapob, nuevasup)
     print(mensaje)
 
 
 def opcion_buscar(paises):
+    """
+    Pide un patrón de caracteres para buscar países por coincidencia parcial.
+    """
     print("\n--- BUSCAR PAÍS ---")
     cual = input("Ingresá el nombre o parte del nombre: ").strip()
     exito, resultado = logica.buscador(cual, paises)
-    print(resultado)
+    print(resultado) # Imprime el listado ordenado de coincidencias o el mensaje de error provisto
 
 
 def opcion_filtrar(paises):
+    """
+    Controlador para bifurcar el filtrado del dataset según la propiedad elegida.
+    """
     mostrar_menu_filtros()
     opcion = input("Elegí una opción: ").strip()
 
@@ -93,17 +125,17 @@ def opcion_filtrar(paises):
         continente = input("Ingresá el continente: ").strip()
         exito, resultado = logica.filtro_cont(paises, continente)
         if exito:
-            mostrar_lista(resultado)
+            mostrar_lista(resultado) # Si el filtro arrojó países, los mostramos tabulados
         else:
-            print(resultado)
+            print(resultado)         # Caso contrario, 'resultado' contiene el string de error
 
     elif opcion == "2":
         pobminima = input("Población mínima: ").strip()
         pobmaxima = input("Población máxima: ").strip()
-        # Validamos que sean enteros antes de pasarlos
+        # Validación defensiva: Verificamos con .isdigit() que las entradas contengan únicamente dígitos numéricos
         if not pobminima.isdigit() or not pobmaxima.isdigit():
             print("Los valores de población deben ser números enteros positivos.")
-            return
+            return # Interrumpimos la ejecución de la función para evitar crasheos por ValueError
         exito, resultado = logica.filtro_pob(paises, int(pobminima), int(pobmaxima))
         if exito:
             mostrar_lista(resultado)
@@ -111,15 +143,33 @@ def opcion_filtrar(paises):
             print(resultado)
 
     elif opcion == "3":
-        return
+        # REQUERIMIENTO COMPLEMENTADO: Captura de datos para el filtro por rango de superficie
+        supminima = input("Superficie mínima (km²): ").strip()
+        supmaxima = input("Superficie máxima (km²): ").strip()
+        # Validación defensiva en la interfaz para certificar que sean enteros antes de procesar
+        if not supminima.isdigit() or not supmaxima.isdigit():
+            print("Los valores de superficie deben ser números enteros positivos.")
+            return
+        exito, resultado = logica.filtro_sup(paises, int(supminima), int(supmaxima))
+        if exito:
+            mostrar_lista(resultado)
+        else:
+            print(resultado)
+
+    elif opcion == "4":
+        return # Retorno vacío para regresar limpiamente al bucle principal sin realizar acciones
     else:
         print("Opción inválida.")
 
 
 def opcion_ordenar(paises):
+    """
+    Maneja los parámetros requeridos por el algoritmo de ordenamiento incorporado.
+    """
     mostrar_menu_orden()
     opcion = input("Elegí una opción: ").strip()
 
+    # Mapeamos la selección del menú con las llaves que manejan internamente nuestros diccionarios
     criterios = {"1": "nombre", "2": "poblacion", "3": "superficie"}
 
     if opcion == "4":
@@ -128,17 +178,20 @@ def opcion_ordenar(paises):
         print("Opción inválida.")
         return
 
-    criterio = criterios[opcion]
+    criterio = criterios[opcion] # Extraemos el string del criterio ('nombre', 'poblacion' o 'superficie')
     orden = input("¿Orden ascendente o descendente? (asc/desc): ").strip().lower()
 
     exito, resultado = logica.ordenar_paises(paises, criterio, orden)
     if exito:
-        mostrar_lista(resultado)
+        mostrar_lista(resultado) # Imprime la lista ordenada de forma reluciente en consola
     else:
         print(resultado)
 
 
 def opcion_estadisticas(paises):
+    """
+    Muestra en pantalla el bloque resumido de cálculos métricos del dataset.
+    """
     exito, mensaje = logica.estadistica(paises)
     print("\n--- ESTADÍSTICAS ---")
     print(mensaje)
@@ -147,14 +200,19 @@ def opcion_estadisticas(paises):
 # --- PROGRAMA PRINCIPAL ---
 
 def main():
-    # Cargamos los datos al inicio del programa
+    """
+    Punto de entrada principal del programa. Coordina el ciclo de vida de la aplicación.
+    """
+    # Flujo de arranque: Cargamos en memoria la lista de países leyendo el archivo CSV especificado
     paises = logica.cargar_csv(RUTA_CSV)
     print(f"Se cargaron {len(paises)} países desde '{RUTA_CSV}'.")
 
+    # Bucle infinito controlado para sostener el menú de consola interactivo en ejecución continuo
     while True:
         mostrar_menu_principal()
         opcion = input("Elegí una opción: ").strip()
 
+        # Estructura condicional anidada para despachar las funciones de interacción según la opción
         if opcion == "1":
             opcion_agregar(paises)
         elif opcion == "2":
@@ -168,15 +226,16 @@ def main():
         elif opcion == "6":
             opcion_estadisticas(paises)
         elif opcion == "7":
-            # Guardamos antes de salir
+            # Persistencia de datos obligatoria: Guardamos todo el estado de la memoria en el archivo CSV
             exito = logica.guardar_csv(RUTA_CSV, paises)
             if exito:
-                print("Datos guardados correctamente. ¡Hasta luego!")
+                print("Datos guardados correctamente en el archivo. ¡Hasta luego!")
             else:
-                print("No había datos para guardar. ¡Hasta luego!")
-            break
+                print("No había datos para guardar o hubo un error en la escritura. ¡Hasta luego!")
+            break # Rompe el bucle 'while True', permitiendo finalizar el script de manera ordenada
         else:
             print("Opción inválida. Ingresá un número del 1 al 7.")
 
-
-main()
+# Ejecución condicional estándar: Garantiza que el programa corra inmediatamente al ser invocado de forma directa
+if __name__ == "__main__":
+    main()
